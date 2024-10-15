@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Web Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            border: 2px solid #fff;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            background-color: #1c1c1c;
+            border-radius: 10px;
+        }
+
+        select, button {
+            width: 120px;
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        select {
+            background-color: #0057a3;
+            color: #fff;
+        }
+
+        button {
+            background-color: #009900;
+            color: #fff;
+        }
+
+        button:hover, select:hover {
+            opacity: 0.9;
+        }
+
+        .log {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #0a325a;
+            border: 1px solid #ff7800;
+            border-radius: 5px;
+            width: 100%;
+            height: 150px;
+            color: #fff;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <form id="class-form">
+        <label for="dropdown">Dropdown menu classe</label><br>
+        <select id="dropdown" name="class">
+            <option value="Class1">Class 1</option>
+            <option value="Class2">Class 2</option>
+            <option value="Class3">Class 3</option>
+        </select>
+        <br>
+        <button type="submit">Selecionar</button>
+    </form>
+
+    <button onclick="downloadCSV()">Download CSV</button>
+
+    <div class="log">
+        <h3>Log do sensor</h3>
+        <p id="sensor-log">[No log data]</p>
+    </div>
+</div>
+
+<script>
+    // Simulated sensor data
+    let sensorData = [];
+    let selectedClass = "Class1"; // Default class
+
+    // Form handling for class selection
+    document.getElementById('class-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        selectedClass = document.getElementById('dropdown').value;
+        alert("Classe selecionada: " + selectedClass);
+    });
+
+    // Function to simulate sensor data and add it to the log
+    function addSensorData() {
+        const accelerometerValue = (Math.random() * 100).toFixed(2);
+        const temperatureValue = (Math.random() * 35 + 15).toFixed(2); // Random temp between 15 and 50°C
+
+        const entry = {
+            classe: selectedClass,
+            acelerometro: accelerometerValue,
+            temperatura: temperatureValue,
+            timestamp: new Date().toLocaleTimeString()
+        };
+
+        // Add entry to the sensor data log
+        sensorData.push(entry);
+        updateLog();
+    }
+
+    // Update the log display
+    function updateLog() {
+        const logElement = document.getElementById('sensor-log');
+        logElement.innerHTML = sensorData.map(entry => 
+            `Classe: ${entry.classe} | Acelerômetro: ${entry.acelerometro} | Temp: ${entry.temperatura}°C | ${entry.timestamp}`
+        ).join('<br>');
+    }
+
+    // Download CSV file
+    function downloadCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,Classe,Acelerômetro,Temperatura,Horário\n";
+        sensorData.forEach(function(row) {
+            let rowData = `${row.classe},${row.acelerometro},${row.temperatura},${row.timestamp}`;
+            csvContent += rowData + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "sensor_log.csv");
+        document.body.appendChild(link); // Required for FF
+        link.click();
+    }
+
+    // Simulate new sensor data every 5 seconds
+    setInterval(addSensorData, 5000);
+</script>
+
+</body>
+</html>

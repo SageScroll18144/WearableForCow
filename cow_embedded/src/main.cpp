@@ -10,12 +10,15 @@
 */
 
 // Import required libraries
+#include <Arduino.h>
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 
 #include <Wire.h>
 #include "accelerometer.h"
 #include "thermometer.h"
+
+
 
 // Set your access point network credentials
 const char* ssid = "ESP32-Access-Point";
@@ -39,10 +42,11 @@ String readSystem() {
 }
 
 void setup(){
+  Serial.begin(115200);
   setupThermometer();
   buildAccelerometer();
   // Serial port for debugging purposes
-  Serial.begin(115200);
+  
   Serial.println();
   
   Serial.println(getAxisX());
