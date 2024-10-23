@@ -4,17 +4,19 @@
 #include <Wire.h>
 #include <WiFi.h>
 #include <ThingsBoard.h>
+#include <ArduinoHttpClient.h>
+#include <Update.h>
 #include <Arduino_MQTT_Client.h>
 #include "accelerometer.h"
-
-#define LED_BUILTIN_PORT13 13
+#include "FS.h"
+#define LED_BUILTIN_PORT13 2
 
 // Insert your network credentials
 #define WIFI_AP "CINGUESTS"
 #define WIFI_PASS "acessocin"
 
 #define TB_SERVER "mqtt.thingsboard.cloud"
-#define TOKEN "8vsdlbbAFJP5r3Ttq8Ho"
+#define TOKEN "v9wqm0zuxpytib00uz1x"
 
 const int PINO_ONEWIRE = 4; // Define pino do sensor
 OneWire oneWire(PINO_ONEWIRE); // Cria um objeto OneWire
@@ -51,6 +53,17 @@ void loop() {
 
   delay(10);
 
+  if (!tb.connected()) {
+    Serial.println("Conectando ao servidor...");
+    if (!tb.connect(TB_SERVER, TOKEN)) {
+      Serial.println("Não foi possivel conectar");
+      digitalWrite(LED_BUILTIN_PORT13, LOW);
+      return;
+    }
+  } else {
+    digitalWrite(LED_BUILTIN_PORT13, HIGH);
+  }
+
   tb.sendTelemetryData("accel X: ", getAxisX());
   tb.sendTelemetryData("accel Y: ", getAxisY());
   tb.sendTelemetryData("accel Z: ", getAxisZ());
@@ -62,3 +75,4 @@ void loop() {
   delay(1000);
 }
 
+//curl -v -X POST http://thingsboard.cloud/api/v1/v9wqm0zuxpytib00uz1x/telemetry --header Content-Type:application/json --data "{temperature:25}"
