@@ -1,83 +1,64 @@
-/*
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-client-server-wi-fi/
-  
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-  
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*/
-
-// Import required libraries
+// Inclusao das bibliotecas
 #include <Arduino.h>
-#include "WiFi.h"
-#include "ESPAsyncWebServer.h"
-
+#include <OneWire.h>
 #include <Wire.h>
+#include <WiFi.h>
+#include <ThingsBoard.h>
+#include <Arduino_MQTT_Client.h>
 #include "accelerometer.h"
-#include "thermometer.h"
 
+#define LED_BUILTIN_PORT13 13
 
+// Insert your network credentials
+#define WIFI_AP "CINGUESTS"
+#define WIFI_PASS "acessocin"
 
-// Set your access point network credentials
-const char* ssid = "ESP32-Access-Point";
-const char* password = "12345678";
+#define TB_SERVER "mqtt.thingsboard.cloud"
+#define TOKEN "8vsdlbbAFJP5r3Ttq8Ho"
 
-/*#include <SPI.h>
-#define BME_SCK 18
-#define BME_MISO 19
-#define BME_MOSI 23
-#define BME_CS 5*/
+const int PINO_ONEWIRE = 4; // Define pino do sensor
+OneWire oneWire(PINO_ONEWIRE); // Cria um objeto OneWire
 
-//Adafruit_BME280 bme; // I2C
-//Adafruit_BME280 bme(BME_CS); // hardware SPI
-//Adafruit_BME280 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK); // software SPI
+constexpr uint32_t MAX_MESSAGE_SIZE = 1024U;
 
-// Create AsyncWebServer object on port 80
-AsyncWebServer server(80);
+WiFiClient espClient;
 
-String readSystem() {
-  return "X: " + String(getAxisX()) + ", Y: " + String(getAxisY()) + ", Z: " + String(getAxisZ()) + ", Temp: " + String(getTemperature()) + "ºC";
+Arduino_MQTT_Client mqttClient(espClient);
+ThingsBoard tb(mqttClient, MAX_MESSAGE_SIZE);
+
+void initWiFi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_AP, WIFI_PASS);
+  Serial.print("Connecting to WiFi ..");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print('.');
+    delay(1000);
+  }
+  Serial.println(WiFi.localIP());
 }
 
-void setup(){
-  Serial.begin(115200);
-  setupThermometer();
+void setup() {
+  Serial.begin(115200); // Inicia a porta serial
+  pinMode(LED_BUILTIN_PORT13, OUTPUT);
+
+  Wire.begin();
+  
   buildAccelerometer();
-  // Serial port for debugging purposes
-  
-  Serial.println();
-  
-  Serial.println(getAxisX());
-
-  // Setting the ESP as an access point
-  Serial.print("Setting AP (Access Point)…");
-  // Remove the password parameter, if you want the AP (Access Point) to be open
-  WiFi.softAP(ssid, password);
-
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
-
-  server.on("/device", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", readSystem().c_str());
-  });
-  
-  bool status;
-
-  // default settings
-  // (you can also pass in a Wire library object like &Wire2)
-  // status = bme.begin(0x76);  
-  // if (!status) {
-  //   Serial.println("Could not find a valid BME280 sensor, check wiring!");
-  //   while (1);
-  // }
-  
-  // Start server
-  server.begin();
 }
- 
-void loop(){
   
+void loop() {
+  if (WiFi.status() != WL_CONNECTED) initWiFi();
+
+  delay(10);
+
+  tb.sendTelemetryData("accel X: ", getAxisX());
+  tb.sendTelemetryData("accel Y: ", getAxisY());
+  tb.sendTelemetryData("accel Z: ", getAxisZ());
+
+  delay(1000);
+
+  tb.loop();
+
+  delay(1000);
 }
+
